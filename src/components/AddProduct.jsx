@@ -5,7 +5,7 @@ import { CKEditor } from "@ckeditor/ckeditor5-react";
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
 
 const AddProduct = () => {
-  const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+  const BASE_URL = import.meta.env.VITE_API_URL;
 
   const { id } = useParams();
   const navigate = useNavigate();
