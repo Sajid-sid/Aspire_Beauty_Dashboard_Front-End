@@ -52,42 +52,46 @@ const AddProduct = () => {
     }
   }, [product.category_id]);
 
-  // Fetch product (edit)
   useEffect(() => {
-    if (isEdit) {
-      axios.get(`${BASE_URL}/api/products/${id}`).then(async (res) => {
-        const p = res.data;
+  if (!isEdit) return;
 
-        setProduct({
-          name: p.name || "",
-          price: p.price || "",
-          stock: p.stock || 0,
-          description: p.description || "",
-          ingredients: p.ingredients || "",
-          category_id: p.category_id || "",
-          subcategory_id: "",
-        });
+  const fetchProduct = async () => {
+    try {
+      const res = await axios.get(`${BASE_URL}/api/products/${id}`);
+      const p = res.data;
 
-        const subs = await axios.get(
-          `${BASE_URL}/api/subcategories/getbycategory/${p.category_id}`
-        );
+      // Fetch subcategories
+      const subsRes = await axios.get(
+        `${BASE_URL}/api/subcategories/getbycategory/${p.category_id}`
+      );
 
-        setSubcategories(subs.data);
-
-        setProduct((prev) => ({
-          ...prev,
-          subcategory_id: p.subcategory_id || "",
-        }));
-
-        setPreviewImages({
-          image1: p.image1,
-          image2: p.image2,
-          image3: p.image3,
-          image4: p.image4,
-        });
+      // Set state once
+      setProduct({
+        name: p.name || "",
+        price: p.price || "",
+        stock: p.stock || 0,
+        description: p.description || "",
+        ingredients: p.ingredients || "",
+        category_id: p.category_id || "",
+        subcategory_id: p.subcategory_id || "",
       });
+
+      setSubcategories(subsRes.data);
+
+      setPreviewImages({
+        image1: p.image1,
+        image2: p.image2,
+        image3: p.image3,
+        image4: p.image4,
+      });
+    } catch (err) {
+      console.error(err);
     }
-  }, [id, isEdit]);
+  };
+
+  fetchProduct();
+}, [id, isEdit]);
+
 
   const handleInputChange = (e) => {
     setProduct({ ...product, [e.target.name]: e.target.value });
