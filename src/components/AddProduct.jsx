@@ -66,6 +66,7 @@ useEffect(() => {
 
   const fetchData = async () => {
     const res = await axios.get(`${BASE_URL}/api/products/${id}`);
+    console.log(res.data);
     const p = res.data;
 
     // 1) Fetch subcategories for the product's category
@@ -77,14 +78,15 @@ useEffect(() => {
 
     // 2) Set product EXACTLY once
     setProduct({
-      name: p.name,
-      price: p.price,
-      stock: p.stock || 0,
-      description: p.description,
-      ingredients: p.ingredients,
-      category_id: p.category_id,
-      subcategory_id: p.subcategory_id,
-    });
+  name: p.name,
+  price: String(p.price),
+  stock: String(p.stock || 0),
+  description: p.description,
+  ingredients: p.ingredients || "",
+  category_id: String(p.category_id),
+  subcategory_id: String(p.subcategory_id),
+});
+
 
     // 3) Set preview images
     setPreviewImages({
@@ -194,9 +196,9 @@ useEffect(() => {
             >
               <option value="">Select Category</option>
               {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
+               <option key={cat.id} value={String(cat.id)}>
+  {cat.name}
+</option>
               ))}
             </select>
           </div>
@@ -213,9 +215,10 @@ useEffect(() => {
             >
               <option value="">Select Subcategory</option>
               {subcategories.map((sub) => (
-                <option key={sub.id} value={sub.id}>
-                  {sub.name}
-                </option>
+               <option key={sub.id} value={String(sub.id)}>
+  {sub.name}
+</option>
+
               ))}
             </select>
           </div>
@@ -311,11 +314,7 @@ useEffect(() => {
                   {previewImages[key] && (
                     <img
                       src={
-                        previewImages[key].startsWith("blob")
-                          ? previewImages[key]
-                          : `${BASE_URL}/uploads/${previewImages[key]
-                              .split("/")
-                              .pop()}`
+                        previewImages[key]
                       }
                       className="w-20 h-20 object-cover rounded-lg shadow"
                     />
