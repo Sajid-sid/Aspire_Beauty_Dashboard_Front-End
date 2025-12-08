@@ -58,6 +58,8 @@ const AddProduct = () => {
   const fetchProduct = async () => {
     try {
       const res = await axios.get(`${BASE_URL}/api/products/${id}`);
+      console.log(res.data);
+      
       const p = res.data;
 
       // Fetch subcategories
