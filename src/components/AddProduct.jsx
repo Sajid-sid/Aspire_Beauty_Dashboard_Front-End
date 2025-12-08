@@ -52,15 +52,7 @@ const AddProduct = () => {
     }
   }, [product.category_id]);
 
-  useEffect(() => {
-    if (product.category_id) {
-      axios
-        .get(`${BASE_URL}/api/subcategories/getbycategory/${product.category_id}`)
-        .then((res) => setSubcategories(res.data));
-    } else {
-      setSubcategories([]);
-    }
-  }, [product.category_id]);
+ 
 
   // Fetch product (edit)
   useEffect(() => {
@@ -68,6 +60,7 @@ const AddProduct = () => {
 
   const fetchData = async () => {
     const res = await axios.get(`${BASE_URL}/api/products/${id}`);
+    console.log(res.data);
     const p = res.data;
 
     // Fetch subcategories first
