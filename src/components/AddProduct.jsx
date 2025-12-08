@@ -33,6 +33,7 @@ const AddProduct = () => {
   const [previewImages, setPreviewImages] = useState({});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [initialLoaded, setInitialLoaded] = useState(false);
 
   // Fetch categories
   useEffect(() => {
@@ -42,35 +43,39 @@ const AddProduct = () => {
   }, []);
 
   // Fetch subcategories
-  useEffect(() => {
-    if (product.category_id) {
-      axios
-        .get(`${BASE_URL}/api/subcategories/getbycategory/${product.category_id}`)
-        .then((res) => setSubcategories(res.data));
-    } else {
-      setSubcategories([]);
-    }
-  }, [product.category_id]);
+ // Fetch subcategories ONLY when user changes category manually
+useEffect(() => {
+  if (!product.category_id) {
+    setSubcategories([]);
+    return;
+  }
+
+  // Prevent override during initial edit-load
+  if (!initialLoaded) return;
+
+  axios
+    .get(`${BASE_URL}/api/subcategories/getbycategory/${product.category_id}`)
+    .then((res) => setSubcategories(res.data));
+}, [product.category_id, initialLoaded]);
+
 
  
-
-  // Fetch product (edit)
-  useEffect(() => {
+// Fetch product (edit)
+useEffect(() => {
   if (!isEdit) return;
 
   const fetchData = async () => {
     const res = await axios.get(`${BASE_URL}/api/products/${id}`);
-    console.log(res.data);
     const p = res.data;
 
-    // Fetch subcategories first
+    // 1) Fetch subcategories for the product's category
     const subs = await axios.get(
       `${BASE_URL}/api/subcategories/getbycategory/${p.category_id}`
     );
 
     setSubcategories(subs.data);
 
-    // SINGLE final update
+    // 2) Set product EXACTLY once
     setProduct({
       name: p.name,
       price: p.price,
@@ -81,17 +86,21 @@ const AddProduct = () => {
       subcategory_id: p.subcategory_id,
     });
 
-    // Image previews
+    // 3) Set preview images
     setPreviewImages({
       image1: p.image1,
       image2: p.image2,
       image3: p.image3,
       image4: p.image4,
     });
+
+    // 4) Mark initial load complete
+    setInitialLoaded(true);
   };
 
   fetchData();
 }, [id]);
+
 
   const handleInputChange = (e) => {
     setProduct({ ...product, [e.target.name]: e.target.value });
