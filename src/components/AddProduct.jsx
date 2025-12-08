@@ -53,47 +53,53 @@ const AddProduct = () => {
   }, [product.category_id]);
 
   useEffect(() => {
+    if (product.category_id) {
+      axios
+        .get(`${BASE_URL}/api/subcategories/getbycategory/${product.category_id}`)
+        .then((res) => setSubcategories(res.data));
+    } else {
+      setSubcategories([]);
+    }
+  }, [product.category_id]);
+
+  // Fetch product (edit)
+  useEffect(() => {
   if (!isEdit) return;
 
-  const fetchProduct = async () => {
-    try {
-      const res = await axios.get(`${BASE_URL}/api/products/${id}`);
-      console.log(res.data);
-      
-      const p = res.data;
+  const fetchData = async () => {
+    const res = await axios.get(`${BASE_URL}/api/products/${id}`);
+    console.log(res.data);
+    const p = res.data;
 
-      // Fetch subcategories
-      const subsRes = await axios.get(
-        `${BASE_URL}/api/subcategories/getbycategory/${p.category_id}`
-      );
+    // Fetch subcategories first
+    const subs = await axios.get(
+      `${BASE_URL}/api/subcategories/getbycategory/${p.category_id}`
+    );
 
-      // Set state once
-      setProduct({
-        name: p.name || "",
-        price: p.price || "",
-        stock: p.stock || 0,
-        description: p.description || "",
-        ingredients: p.ingredients || "",
-        category_id: p.category_id || "",
-        subcategory_id: p.subcategory_id || "",
-      });
+    setSubcategories(subs.data);
 
-      setSubcategories(subsRes.data);
+    // SINGLE final update
+    setProduct({
+      name: p.name || "",
+      price: p.price || "",
+      stock: p.stock || 0,
+      description: p.description || "",
+      ingredients: p.ingredients || "",
+      category_id: p.category_id || "",
+      subcategory_id: p.subcategory_id || "",
+    });
 
-      setPreviewImages({
-        image1: p.image1,
-        image2: p.image2,
-        image3: p.image3,
-        image4: p.image4,
-      });
-    } catch (err) {
-      console.error(err);
-    }
+    // Image previews
+    setPreviewImages({
+      image1: p.image1,
+      image2: p.image2,
+      image3: p.image3,
+      image4: p.image4,
+    });
   };
 
-  fetchProduct();
-}, [id, isEdit]);
-
+  fetchData();
+}, [id]);
 
   const handleInputChange = (e) => {
     setProduct({ ...product, [e.target.name]: e.target.value });
