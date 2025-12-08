@@ -45,18 +45,16 @@ const AddProduct = () => {
   // Fetch subcategories
  // Fetch subcategories ONLY when user changes category manually
 useEffect(() => {
+  if (!initialLoaded) return; // prevent override on edit mode load
   if (!product.category_id) {
     setSubcategories([]);
     return;
   }
 
-  // Prevent override during initial edit-load
-  if (!initialLoaded) return;
-
   axios
     .get(`${BASE_URL}/api/subcategories/getbycategory/${product.category_id}`)
     .then((res) => setSubcategories(res.data));
-}, [product.category_id, initialLoaded]);
+}, [product.category_id]);
 
 
  
