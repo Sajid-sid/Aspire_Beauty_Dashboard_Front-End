@@ -55,30 +55,31 @@ const AddProduct = () => {
  
 
   // Fetch product (edit)
-  useEffect(() => {
-  if (!isEdit || categories.length === 0) return;
+ useEffect(() => {
+  if (!isEdit) return;
 
   const fetchData = async () => {
     const res = await axios.get(`${BASE_URL}/api/products/${id}`);
     const p = res.data;
 
-    // Fetch subcategories first
+    // Fetch subcategories
     const subs = await axios.get(
       `${BASE_URL}/api/subcategories/getbycategory/${p.category_id}`
     );
-
     setSubcategories(subs.data);
 
+    // FIX: convert numbers to string
     setProduct({
       name: p.name || "",
-      price: p.price || "",
-      stock: p.stock || "",
+      price: String(p.price ?? ""),
+      stock: String(p.stock ?? ""),
       description: p.description || "",
       ingredients: p.ingredients || "",
-      category_id: String(p.category_id),
-      subcategory_id: String(p.subcategory_id),
+      category_id: String(p.category_id ?? ""),
+      subcategory_id: String(p.subcategory_id ?? ""),
     });
 
+    // Images
     setPreviewImages({
       image1: p.image1,
       image2: p.image2,
@@ -88,7 +89,8 @@ const AddProduct = () => {
   };
 
   fetchData();
-}, [id, categories]);
+}, [id]);
+
 
 
   const handleInputChange = (e) => {
