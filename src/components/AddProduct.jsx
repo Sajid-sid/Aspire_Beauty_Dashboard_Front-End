@@ -52,23 +52,14 @@ const AddProduct = () => {
     }
   }, [product.category_id]);
 
-  // useEffect(() => {
-  //   if (product.category_id) {
-  //     axios
-  //       .get(`${BASE_URL}/api/subcategories/getbycategory/${product.category_id}`)
-  //       .then((res) => setSubcategories(res.data));
-  //   } else {
-  //     setSubcategories([]);
-  //   }
-  // }, [product.category_id]);
+ 
 
   // Fetch product (edit)
   useEffect(() => {
-  if (!isEdit) return;
+  if (!isEdit || categories.length === 0) return;
 
   const fetchData = async () => {
     const res = await axios.get(`${BASE_URL}/api/products/${id}`);
-    console.log(res.data);
     const p = res.data;
 
     // Fetch subcategories first
@@ -78,18 +69,16 @@ const AddProduct = () => {
 
     setSubcategories(subs.data);
 
-    // SINGLE final update
     setProduct({
       name: p.name || "",
       price: p.price || "",
-      stock: p.stock || 0,
+      stock: p.stock || "",
       description: p.description || "",
       ingredients: p.ingredients || "",
-      category_id: p.category_id || "",
-      subcategory_id: p.subcategory_id || "",
+      category_id: String(p.category_id),
+      subcategory_id: String(p.subcategory_id),
     });
 
-    // Image previews
     setPreviewImages({
       image1: p.image1,
       image2: p.image2,
@@ -99,7 +88,8 @@ const AddProduct = () => {
   };
 
   fetchData();
-}, [id]);
+}, [id, categories]);
+
 
   const handleInputChange = (e) => {
     setProduct({ ...product, [e.target.name]: e.target.value });
