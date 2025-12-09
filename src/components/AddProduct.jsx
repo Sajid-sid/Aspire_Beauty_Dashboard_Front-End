@@ -5,10 +5,14 @@ import { CKEditor } from "@ckeditor/ckeditor5-react";
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
 
 const AddProduct = () => {
-  const BASE_URL = import.meta.env.VITE_API_URL || "https://beauty.aspireths.com";
+  const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+
   const { id } = useParams();
   const navigate = useNavigate();
   const isEdit = Boolean(id);
+
+  const [categories, setCategories] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
 
   const [product, setProduct] = useState({
     name: "",
@@ -20,28 +24,49 @@ const AddProduct = () => {
     subcategory_id: "",
   });
 
-  const [categories, setCategories] = useState([]);
-  const [subcategories, setSubcategories] = useState([]);
-  const [images, setImages] = useState({ image1: null, image2: null, image3: null, image4: null });
-  const [previewImages, setPreviewImages] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [initialLoaded, setInitialLoaded] = useState(false);
+  const [images, setImages] = useState({
+    image1: null,
+    image2: null,
+    image3: null,
+    image4: null,
+  });
 
-  // Fetch categories
+  const [previewImages, setPreviewImages] = useState({
+    image1: null,
+    image2: null,
+    image3: null,
+    image4: null,
+  });
+
+  // --------------------------
+  // Load Categories on Mount
+  // --------------------------
   useEffect(() => {
-    axios.get(`${BASE_URL}/api/categories`).then(res => setCategories(res.data));
+    axios
+      .get(`${BASE_URL}/api/categories`)
+      .then((res) => setCategories(res.data))
+      .catch((err) => console.error("Categories fetch error:", err));
   }, []);
 
-  // Fetch subcategories ONLY when user changes category manually
+  // -------------------------------------------------------
+  // Fetch subcategories ONLY IN ADD MODE (PREVENT OVERRIDE)
+  // -------------------------------------------------------
   useEffect(() => {
-    if (!initialLoaded) return;
-    if (!product.category_id) return setSubcategories([]);
-    axios.get(`${BASE_URL}/api/subcategories/getbycategory/${product.category_id}`)
-      .then(res => setSubcategories(res.data));
-  }, [product.category_id, initialLoaded]);
+    if (isEdit) return;
 
-  // Fetch product in edit mode
+    if (product.category_id) {
+      axios
+        .get(`${BASE_URL}/api/subcategories/getbycategory/${product.category_id}`)
+        .then((res) => setSubcategories(res.data))
+        .catch((err) => console.error("Subcategory error:", err));
+    } else {
+      setSubcategories([]);
+    }
+  }, [product.category_id, isEdit]);
+
+  // -------------------------
+  // Load Product in Edit Mode
+  // -------------------------
   useEffect(() => {
     if (!isEdit) return;
 
@@ -50,139 +75,228 @@ const AddProduct = () => {
         const res = await axios.get(`${BASE_URL}/api/products/${id}`);
         const p = res.data;
 
-        // Fetch subcategories for product category
-        const subs = await axios.get(`${BASE_URL}/api/subcategories/getbycategory/${p.category_id}`);
-        setSubcategories(subs.data);
+        // fetch subcategories for this product's category
+        const subRes = await axios.get(
+          `${BASE_URL}/api/subcategories/getbycategory/${p.category_id}`
+        );
+        setSubcategories(subRes.data);
 
-        // Set product
+        // atomic update to avoid overriding fields later
         setProduct({
-          name: p.name,
-          price: String(p.price),
-          stock: String(p.stock ?? 0),
-          description: p.description,
+          name: p.name || "",
+          price: String(p.price || ""),
+          stock: String(p.stock || ""),
+          description: p.description || "",
           ingredients: p.ingredients || "",
-          category_id: String(p.category_id),
-          subcategory_id: String(p.subcategory_id),
+          category_id: String(p.category_id || ""),
+          subcategory_id: String(p.subcategory_id || ""),
         });
 
-        // Set preview images safely
         setPreviewImages({
-          image1: p.image1 ?? null,
-          image2: p.image2 ?? null,
-          image3: p.image3 ?? null,
-          image4: p.image4 ?? null,
+          image1: p.image1 || null,
+          image2: p.image2 || null,
+          image3: p.image3 || null,
+          image4: p.image4 || null,
         });
-
-        setInitialLoaded(true);
       } catch (err) {
-        console.error("Failed to load product:", err);
+        console.error("Edit mode product load error:", err);
       }
     };
 
     fetchProduct();
-  }, [id]);
+  }, [id, isEdit]);
 
-  const handleInputChange = e => setProduct({ ...product, [e.target.name]: e.target.value });
-  const handleFileChange = e => {
-    const { name, files } = e.target;
-    setImages({ ...images, [name]: files[0] });
-    setPreviewImages({ ...previewImages, [name]: URL.createObjectURL(files[0]) });
+  // ----------------------
+  // Input Change Handler
+  // ----------------------
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setProduct((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async e => {
-    e.preventDefault();
-    if (!product.name || !product.price || !product.category_id) return setMessage("Name, price, and category are required!");
-    if (!isEdit && !images.image1) return setMessage("Main image is required!");
+  // ----------------------
+  // Image Change Handler
+  // ----------------------
+  const handleImageChange = (e) => {
+    const { name, files } = e.target;
+    const file = files[0];
 
-    const formData = new FormData();
-    Object.entries(product).forEach(([k, v]) => formData.append(k, v));
-    Object.entries(images).forEach(([k, v]) => v instanceof File && formData.append(k, v));
+    setImages((prev) => ({ ...prev, [name]: file }));
 
-    try {
-      setLoading(true);
-      const token = localStorage.getItem("adminToken");
-      const url = isEdit ? `${BASE_URL}/api/products/${id}` : `${BASE_URL}/api/products`;
-
-      await axios({ method: isEdit ? "put" : "post", url, data: formData, headers: { "Content-Type": "multipart/form-data", Authorization: `Bearer ${token}` } });
-
-      setMessage("Saved successfully!");
-      setTimeout(() => navigate("/dashboard/products"), 800);
-    } finally {
-      setLoading(false);
+    if (file) {
+      setPreviewImages((prev) => ({
+        ...prev,
+        [name]: URL.createObjectURL(file),
+      }));
     }
   };
 
+  // -------------------
+  // Submit Handler
+  // -------------------
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const fd = new FormData();
+
+      Object.keys(product).forEach((key) => {
+        fd.append(key, product[key]);
+      });
+
+      Object.keys(images).forEach((key) => {
+        if (images[key]) fd.append(key, images[key]);
+      });
+
+      if (isEdit) {
+        await axios.put(`${BASE_URL}/api/products/${id}`, fd);
+      } else {
+        await axios.post(`${BASE_URL}/api/products`, fd);
+      }
+
+      navigate("/products");
+    } catch (err) {
+      console.error("Submit error:", err);
+    }
+  };
+
+  // -------------------------
+  // UI STARTS HERE
+  // -------------------------
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex justify-center p-3 overflow-x-hidden">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-[100vw] p-5 mx-auto overflow-hidden">
-        <h2 className="text-xl font-bold text-[#03619E] mb-4 text-center">{isEdit ? "Edit Product" : "Add New Product"}</h2>
-        {message && <p className="text-center font-medium text-green-600 mb-4">{message}</p>}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Category */}
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold">Category</label>
-            <select name="category_id" value={product.category_id} onChange={handleInputChange} className="w-full border rounded-lg p-2">
-              <option value="">Select Category</option>
-              {categories.map(cat => <option key={cat.id} value={String(cat.id)}>{cat.name}</option>)}
-            </select>
+    <div className="p-6">
+      <h2 className="text-2xl font-semibold mb-4">
+        {isEdit ? "Edit Product" : "Add Product"}
+      </h2>
+
+      <form
+        onSubmit={handleSubmit}
+        className="grid grid-cols-1 md:grid-cols-2 gap-4"
+      >
+        {/* Product Name */}
+        <div>
+          <label className="font-semibold">Product Name</label>
+          <input
+            type="text"
+            name="name"
+            className="border w-full p-2 mt-1 rounded"
+            value={product.name}
+            onChange={handleInputChange}
+          />
+        </div>
+
+        {/* Price */}
+        <div>
+          <label className="font-semibold">Price</label>
+          <input
+            type="number"
+            name="price"
+            className="border w-full p-2 mt-1 rounded"
+            value={product.price}
+            onChange={handleInputChange}
+          />
+        </div>
+
+        {/* Stock */}
+        <div>
+          <label className="font-semibold">Stock</label>
+          <input
+            type="number"
+            name="stock"
+            className="border w-full p-2 mt-1 rounded"
+            value={product.stock}
+            onChange={handleInputChange}
+          />
+        </div>
+
+        {/* Category */}
+        <div>
+          <label className="font-semibold">Category</label>
+          <select
+            name="category_id"
+            className="border w-full p-2 mt-1 rounded"
+            value={product.category_id}
+            onChange={handleInputChange}
+          >
+            <option value="">Select category</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Subcategory */}
+        <div>
+          <label className="font-semibold">Subcategory</label>
+          <select
+            name="subcategory_id"
+            className="border w-full p-2 mt-1 rounded"
+            value={product.subcategory_id}
+            onChange={handleInputChange}
+          >
+            <option value="">Select subcategory</option>
+            {subcategories.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Description (CKEditor) */}
+        <div className="col-span-2">
+          <label className="font-semibold">Description</label>
+          <CKEditor
+            editor={ClassicEditor}
+            data={product.description}
+            onChange={(event, editor) => {
+              const data = editor.getData();
+              setProduct((prev) => ({ ...prev, description: data }));
+            }}
+          />
+        </div>
+
+        {/* Ingredients */}
+        <div className="col-span-2">
+          <label className="font-semibold">Ingredients</label>
+          <textarea
+            name="ingredients"
+            className="border w-full p-2 mt-1 rounded"
+            rows="4"
+            value={product.ingredients}
+            onChange={handleInputChange}
+          />
+        </div>
+
+        {/* IMAGES */}
+        {["image1", "image2", "image3", "image4"].map((imgKey) => (
+          <div key={imgKey} className="flex flex-col">
+            <label className="font-semibold">{imgKey.toUpperCase()}</label>
+            <input
+              type="file"
+              name={imgKey}
+              className="mt-1"
+              onChange={handleImageChange}
+            />
+
+            {previewImages[imgKey] && (
+              <img
+                src={previewImages[imgKey]}
+                className="h-28 w-28 border mt-2 rounded object-cover"
+              />
+            )}
           </div>
-          {/* Subcategory */}
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold">Subcategory</label>
-            <select name="subcategory_id" value={product.subcategory_id} onChange={handleInputChange} className="w-full border rounded-lg p-2" disabled={!product.category_id}>
-              <option value="">Select Subcategory</option>
-              {subcategories.map(sub => <option key={sub.id} value={String(sub.id)}>{sub.name}</option>)}
-            </select>
-          </div>
-          {/* Product Name */}
-          <div className="space-y-2">
-            <label className="text-sm font-semibold">Product Name</label>
-            <input type="text" name="name" value={product.name} onChange={handleInputChange} className="border rounded-lg p-2 w-full" placeholder="Enter product name" />
-          </div>
-          {/* Price & Stock */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="text-sm font-semibold">Price</label>
-              <input type="number" name="price" value={product.price} onChange={handleInputChange} className="border rounded-lg p-2 w-full" placeholder="Price" />
-            </div>
-            <div>
-              <label className="text-sm font-semibold">Stock</label>
-              <input type="number" name="stock" value={product.stock} onChange={handleInputChange} className="border rounded-lg p-2 w-full" placeholder="Stock" />
-            </div>
-          </div>
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-semibold mb-1">Description</label>
-            <div className="border rounded-lg overflow-hidden w-full">
-              <CKEditor editor={ClassicEditor} data={product.description} onChange={(e, editor) => setProduct({ ...product, description: editor.getData() })} />
-            </div>
-          </div>
-          {/* Ingredients */}
-          <div>
-            <label className="block text-sm font-semibold mb-1">Ingredients</label>
-            <textarea name="ingredients" value={product.ingredients} onChange={handleInputChange} rows={3} className="w-full border rounded-lg p-2" placeholder="Enter ingredients" />
-          </div>
-          {/* Images */}
-          <div>
-            <label className="block text-sm font-semibold mb-2">Product Images</label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {["image1", "image2", "image3", "image4"].map(key => (
-                <div key={key} className="flex flex-col items-center w-full">
-                  <input type="file" name={key} accept="image/*" onChange={handleFileChange} className="text-xs mb-2 w-full" />
-                  {previewImages[key] && <img src={previewImages[key]} className="w-20 h-20 object-cover rounded-lg shadow" />}
-                </div>
-              ))}
-            </div>
-          </div>
-          <button type="submit" disabled={loading} className="w-full bg-[#03619E] hover:bg-blue-900 text-white font-medium py-2 rounded-lg">{loading ? "Saving..." : isEdit ? "Update Product" : "Add Product"}</button>
-        </form>
-      </div>
-      <style>{`
-        .ck.ck-editor { width: 100% !important; }
-        .ck.ck-editor__main, .ck.ck-editor__editable { width: 100% !important; min-width: 0 !important; }
-        .ck.ck-content { min-width: 0 !important; }
-        .ck-toolbar, .ck-editor__top { width: 100% !important; overflow: hidden !important; flex-wrap: wrap !important; }
-      `}</style>
+        ))}
+
+        <button
+          type="submit"
+          className="col-span-2 bg-blue-600 text-white p-2 rounded mt-4"
+        >
+          {isEdit ? "Update Product" : "Add Product"}
+        </button>
+      </form>
     </div>
   );
 };
