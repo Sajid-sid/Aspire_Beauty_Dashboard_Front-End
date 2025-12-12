@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const Orders = () => {
   const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+  const navigate = useNavigate();
 
   const [orders, setOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [loadingId, setLoadingId] = useState(null);
 
   // Sorting
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
@@ -58,7 +59,7 @@ const Orders = () => {
     }
     setSortConfig({ key, direction });
 
-    const sortedData = [...filteredOrders].sort((a, b) => {
+    const sorted = [...filteredOrders].sort((a, b) => {
       if (key === "createdAt") {
         return direction === "asc"
           ? new Date(a.createdAt) - new Date(b.createdAt)
@@ -74,39 +75,13 @@ const Orders = () => {
           ? a.orderStatus.localeCompare(b.orderStatus)
           : b.orderStatus.localeCompare(a.orderStatus);
       }
+      return 0;
     });
 
-    setFilteredOrders(sortedData);
+    setFilteredOrders(sorted);
   };
 
-  // UPDATE STATUS
-  const updateStatus = async (id, newStatus) => {
-    try {
-      setLoadingId(id);
-      const token = localStorage.getItem("adminToken");
-
-      await axios.put(
-        `${BASE_URL}/api/orders/status/${id}`,
-        { status: newStatus },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      const updated = orders.map((order) =>
-        order.id === id ? { ...order, orderStatus: newStatus } : order
-      );
-
-      setOrders(updated);
-      setFilteredOrders(updated);
-      setLoadingId(null);
-    } catch (error) {
-      console.log("Error updating status:", error.message);
-      setLoadingId(null);
-    }
-  };
-
-  // Pagination
+  // PAGINATION
   const totalPages = Math.ceil(filteredOrders.length / pageSize);
   const paginatedOrders = filteredOrders.slice(
     (currentPage - 1) * pageSize,
@@ -119,7 +94,6 @@ const Orders = () => {
 
       {/* FILTERS */}
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between mb-4">
-
         <input
           type="text"
           placeholder="Search by ID, Name, Phone, Email"
@@ -159,12 +133,7 @@ const Orders = () => {
                 Total ⬍
               </th>
 
-              <th
-                className="p-3 border-b cursor-pointer"
-                onClick={() => sortOrders("orderStatus")}
-              >
-                Status ⬍
-              </th>
+              <th className="p-3 border-b">View</th>
 
               <th
                 className="p-3 border-b cursor-pointer"
@@ -184,10 +153,7 @@ const Orders = () => {
               </tr>
             ) : (
               paginatedOrders.map((order) => (
-                <tr
-                  key={order.id}
-                  className="hover:bg-gray-50 transition border-b"
-                >
+                <tr key={order.id} className="hover:bg-gray-50 transition border-b">
                   <td className="p-3">{order.id}</td>
                   <td className="p-3">{order.fullName}</td>
                   <td className="p-3">{order.phone}</td>
@@ -195,25 +161,14 @@ const Orders = () => {
 
                   <td className="p-3 font-semibold">₹{order.totalAmount}</td>
 
+                  {/* VIEW BUTTON */}
                   <td className="p-3">
-                    <select
-                      disabled={loadingId === order.id}
-                      value={order.orderStatus}
-                      onChange={(e) => updateStatus(order.id, e.target.value)}
-                      className="px-3 py-1 border rounded-md bg-gray-100"
+                    <button
+                      onClick={() => navigate(`/dashboard/orders/${order.id}`)}
+                      className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                     >
-                      <option>Pending</option>
-                      <option>Confirmed</option>
-                      <option>Shipped</option>
-                      <option>Delivered</option>
-                      <option>Cancelled</option>
-                    </select>
-
-                    {loadingId === order.id && (
-                      <span className="text-sm text-blue-600 ml-2">
-                        Updating...
-                      </span>
-                    )}
+                      View
+                    </button>
                   </td>
 
                   <td className="p-3">{order.createdAt?.slice(0, 10)}</td>

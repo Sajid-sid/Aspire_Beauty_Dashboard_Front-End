@@ -18,6 +18,7 @@ import Users from "./pages/Users";
 import AddSubCategory from "./components/AddSubCategory";
 import AddProduct from "./components/AddProduct";
 import Banner from "./pages/Banner";
+import OrderDetails from "./pages/OrderDetails";
 
 
 const App = () => {
@@ -47,6 +48,7 @@ const App = () => {
           <Route path="add-subcategory/:id" element={<AddSubCategory />} />
           <Route path="add-product" element={<AddProduct />} />
           <Route path="add-product/:id" element={<AddProduct />} />
+          <Route path='orders/:id' element={ <OrderDetails /> } />
         </Route>
 
       </Routes>
