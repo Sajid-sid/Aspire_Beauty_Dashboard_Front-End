@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 
 export default function AddVariant({ onSuccess }) {
+    const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
   const [products, setProducts] = useState([]);
   const [formData, setFormData] = useState({
     productid: "",
@@ -15,7 +16,7 @@ export default function AddVariant({ onSuccess }) {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await axios.get("http://localhost:5001/api/products");
+        const res = await axios.get(`${BASE_URL}/api/categories/products`);
         const data = Array.isArray(res.data) ? res.data : res.data.products || [];
         console.log(data);
         setProducts(data);
@@ -43,7 +44,7 @@ export default function AddVariant({ onSuccess }) {
     console.log(formData);
 
     try {
-      await axios.post("http://localhost:5001/api/variants", payload, {
+      await axios.post(`${BASE_URL}/api/variants`, payload, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       alert("Variant added successfully!");

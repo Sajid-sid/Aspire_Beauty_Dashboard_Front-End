@@ -18,7 +18,7 @@ export default function ProductDetailsForm() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await axios.get("http://localhost:5001/api/products");
+        const res = await axios.get(`${BASE_URL}/api/products`);
         setProducts(res.data);
       } catch (err) {
         console.error("Failed to fetch products", err);
@@ -33,7 +33,7 @@ export default function ProductDetailsForm() {
       if (!formData.productid) return;
       try {
         const res = await axios.get(
-          `http://localhost:5001/api/product-details/${formData.productid}`
+          `${BASE_URL}/api/product-details/${formData.productid}`
         );
         const data = res.data;
         setFormData({
@@ -87,7 +87,7 @@ export default function ProductDetailsForm() {
     });
 
     try {
-      await axios.post("http://localhost:5001/api/product-details", payload, {
+      await axios.post(`${BASE_URL}/api/product-details`, payload, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       alert("Product details saved successfully!");

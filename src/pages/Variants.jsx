@@ -9,7 +9,7 @@ export default function Variants() {
   // Fetch all variants
   const fetchVariants = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/api/variants");
+      const res = await axios.get(`${BASE_URL}/api/products`);
       setVariants(res.data);
     } catch (error) {
       console.error("Failed to fetch variants", error);
@@ -24,7 +24,7 @@ export default function Variants() {
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this variant?")) {
       try {
-        await axios.delete(`http://localhost:5001/api/variants/${id}`);
+        await axios.delete(`${BASE_URL}/api/variants/${id}`);
         alert("Variant deleted successfully!");
         setRefresh((prev) => !prev);
       } catch (error) {

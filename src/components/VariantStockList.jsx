@@ -6,7 +6,7 @@ export default function VariantStockList() {
 
   const fetchVariants = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/api/stock");
+      const res = await axios.get(`${BASE_URL}/api/stock`);
 
       const data = Array.isArray(res.data)
         ? res.data

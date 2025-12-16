@@ -8,7 +8,7 @@ export default function StockPage() {
   // Fetch all variants
   const fetchVariants = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/api/variants");
+      const res = await axios.get(`${BASE_URL}/api/variants`);
       setVariants(res.data);
     } catch (error) {
       console.error("Failed to fetch variants", error);
@@ -33,7 +33,7 @@ export default function StockPage() {
     }
 
     try {
-      await axios.put(`http://localhost:5001/api/stock/add/${id}`, { quantity });
+      await axios.put(`${BASE_URL}/api/stock/add/${id}`, { quantity });
       alert("Stock updated successfully!");
       setQuantities({ ...quantities, [id]: "" });
       fetchVariants(); // refresh table
