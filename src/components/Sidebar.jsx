@@ -171,6 +171,28 @@ const Sidebar = ({ isOpen, toggle }) => {
             <FaUser className="text-lg" />
             {isOpen && <span className="text-sm md:text-base">Banner</span>}
           </NavLink>
+          <NavLink
+            to="/dashboard/stock"
+            onClick={() => window.innerWidth < 768 && toggle()}
+            className={({ isActive }) =>
+              `flex items-center gap-3 py-3 px-4 mx-2 rounded-lg transition-all 
+              ${isActive ? "bg-blue-600" : "hover:bg-blue-800"}`
+            }
+          >
+            <FaUser className="text-lg" />
+            {isOpen && <span className="text-sm md:text-base">Stock</span>}
+          </NavLink>
+          <NavLink
+            to="/dashboard/variant"
+            onClick={() => window.innerWidth < 768 && toggle()}
+            className={({ isActive }) =>
+              `flex items-center gap-3 py-3 px-4 mx-2 rounded-lg transition-all 
+              ${isActive ? "bg-blue-600" : "hover:bg-blue-800"}`
+            }
+          >
+            <FaUser className="text-lg" />
+            {isOpen && <span className="text-sm md:text-base">Variant</span>}
+          </NavLink>
 
           {/* Logout */}
           <NavLink

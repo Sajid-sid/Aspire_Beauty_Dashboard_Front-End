@@ -1,10 +1,5 @@
 import React, { useState } from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, } from "react-router-dom";
 
 // Pages & Components
 import Login from "./pages/Login";
@@ -19,6 +14,9 @@ import AddSubCategory from "./components/AddSubCategory";
 import AddProduct from "./components/AddProduct";
 import Banner from "./pages/Banner";
 import OrderDetails from "./pages/OrderDetails";
+import StockPage from "./pages/StockPage";
+import Variants from "./pages/Variants";
+import ProductDetailsPage from "./pages/ProductDetailsPage";
 
 
 const App = () => {
@@ -40,8 +38,13 @@ const App = () => {
           <Route path="categories" element={<Categories />} />
           <Route path="subcategories" element={<Subcategories />} />
           <Route path="orders" element={<Orders />} />
+          <Route path="stock" element={ <StockPage /> } />
+          <Route path="product-details/:productId" element={<ProductDetailsPage />} />
+          <Route path="variant" element={ <Variants /> } />
           <Route path="users" element={<Users />} />
           <Route path="banner" element={ <Banner /> } />
+          
+
 
           {/* Add/Edit Routes */}
           <Route path="add-subcategory" element={<AddSubCategory />} />

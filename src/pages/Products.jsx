@@ -14,26 +14,23 @@ const Products = () => {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedSubcategory, setSelectedSubcategory] = useState("");
-  const [stockFilter, setStockFilter] = useState(""); // "", in, out
+  const [selectedGender, setSelectedGender] = useState("");
   const [sortBy, setSortBy] = useState("");
 
   const [message, setMessage] = useState("");
-
   const token = localStorage.getItem("adminToken");
   const navigate = useNavigate();
 
   // Fix image URL
   const getImageUrl = (img) => {
     if (!img) return null;
-    if (img.startsWith("http")) return img.replace(/^http:\//, "http://");
-    return `${BASE_URL}/uploads/${img}`;
+    return img.startsWith("http") ? img : `${BASE_URL}/uploads/${img}`;
   };
 
   // Fetch all data
   const fetchProducts = async () => {
     try {
       const res = await axios.get(`${BASE_URL}/api/products`);
-      console.log(res.data);
       setProducts(res.data.products || res.data || []);
     } catch (err) {
       console.error("Error fetching products:", err);
@@ -65,24 +62,22 @@ const Products = () => {
     fetchProducts();
   }, []);
 
-  // Filter subcategories on change
-useEffect(() => {
-  if (selectedCategory) {
-    const selectedCatObj = categories.find(
-      (c) => c.name === selectedCategory
-    );
-
-    if (selectedCatObj) {
-      const filtered = subcategories.filter(
-        (sub) => sub.category_id === selectedCatObj.id
+  // Filter subcategories on category change
+  useEffect(() => {
+    if (selectedCategory) {
+      const selectedCatObj = categories.find(
+        (c) => c.name === selectedCategory
       );
-      setFilteredSubcategories(filtered);
+      if (selectedCatObj) {
+        const filtered = subcategories.filter(
+          (sub) => sub.category_id === selectedCatObj.id
+        );
+        setFilteredSubcategories(filtered);
+      }
+    } else {
+      setFilteredSubcategories([]);
     }
-  } else {
-    setFilteredSubcategories([]);
-  }
-}, [selectedCategory, categories, subcategories]);
-
+  }, [selectedCategory, categories, subcategories]);
 
   // Delete product
   const handleDelete = async (id) => {
@@ -98,53 +93,30 @@ useEffect(() => {
       setMessage("❌ Failed to delete product");
     }
   };
-const filteredProducts = products
-  .filter((p) => {
-    const searchLower = search.toLowerCase();
 
-    // Search: name + category + subcategory
-    const matchSearch =
-      p.name.toLowerCase().includes(searchLower) ||
-      (p.category_name &&
-        p.category_name.toLowerCase().includes(searchLower)) ||
-      (p.subcategory_name &&
-        p.subcategory_name.toLowerCase().includes(searchLower));
+  const filteredProducts = products
+    .filter((p) => {
+      const searchLower = search.toLowerCase();
+      const matchSearch =
+        p.name.toLowerCase().includes(searchLower) ||
+        (p.category_name && p.category_name.toLowerCase().includes(searchLower)) ||
+        (p.subcategory_name && p.subcategory_name.toLowerCase().includes(searchLower));
 
-    // Category match by NAME
-    const matchCategory = selectedCategory
-      ? p.category_name === selectedCategory
-      : true;
+      const matchCategory = selectedCategory ? p.category_name === selectedCategory : true;
+      const matchSub = selectedSubcategory ? p.subcategory_name === selectedSubcategory : true;
+      const matchGender = selectedGender ? p.gender === selectedGender : true;
 
-    // Subcategory match by NAME
-    const matchSub = selectedSubcategory
-      ? p.subcategory_name === selectedSubcategory
-      : true;
-
-    // Stock filter
-    const matchStock =
-      stockFilter === "in"
-        ? p.stock > 0
-        : stockFilter === "out"
-        ? p.stock === 0
-        : true;
-
-    return matchSearch && matchCategory && matchSub && matchStock;
-  })
-  .sort((a, b) => {
-    if (sortBy === "newest")
-      return new Date(b.created_at) - new Date(a.created_at);
-
-    if (sortBy === "low-high") return a.price - b.price;
-
-    if (sortBy === "high-low") return b.price - a.price;
-
-    return 0;
-  });
-
+      return matchSearch && matchCategory && matchSub && matchGender;
+    })
+    .sort((a, b) => {
+      if (sortBy === "newest") return new Date(b.created_at) - new Date(a.created_at);
+      if (sortBy === "low-high") return a.price - b.price;
+      if (sortBy === "high-low") return b.price - a.price;
+      return 0;
+    });
 
   return (
     <div className="p-4 sm:p-6 bg-white shadow-md rounded-2xl max-w-6xl mx-auto mt-8">
-
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
         <h2 className="text-2xl font-semibold text-gray-800">Products</h2>
@@ -157,9 +129,7 @@ const filteredProducts = products
       </div>
 
       {/* Filters */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-
-        {/* Search */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         <input
           type="text"
           placeholder="Search products..."
@@ -168,7 +138,6 @@ const filteredProducts = products
           className="border border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-[#03619E]"
         />
 
-        {/* Category */}
         <select
           value={selectedCategory}
           onChange={(e) => {
@@ -182,11 +151,9 @@ const filteredProducts = products
             <option key={c.id} value={c.name}>
               {c.name}
             </option>
-
           ))}
         </select>
 
-        {/* Subcategory */}
         <select
           value={selectedSubcategory}
           onChange={(e) => setSelectedSubcategory(e.target.value)}
@@ -196,24 +163,22 @@ const filteredProducts = products
           <option value="">All Subcategories</option>
           {filteredSubcategories.map((sub) => (
             <option key={sub.id} value={sub.name}>
-  {sub.name}
-</option>
-
+              {sub.name}
+            </option>
           ))}
         </select>
 
-        {/* Stock Filter */}
         <select
-          value={stockFilter}
-          onChange={(e) => setStockFilter(e.target.value)}
+          value={selectedGender}
+          onChange={(e) => setSelectedGender(e.target.value)}
           className="border border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-[#03619E]"
         >
-          <option value="">All Stock</option>
-          <option value="in">In Stock</option>
-          <option value="out">Out of Stock</option>
+          <option value="">All Genders</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+          <option value="unisex">Unisex</option>
         </select>
 
-        {/* Sort */}
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value)}
@@ -236,12 +201,11 @@ const filteredProducts = products
               <th className="px-4 py-2 text-left">Category</th>
               <th className="px-4 py-2 text-left">Subcategory</th>
               <th className="px-4 py-2 text-left">Price</th>
-              <th className="px-4 py-2 text-left">Stock</th>
+              <th className="px-4 py-2 text-left">Gender</th>
               <th className="px-4 py-2 text-center">Image</th>
               <th className="px-4 py-2 text-center">Actions</th>
             </tr>
           </thead>
-
           <tbody>
             {filteredProducts.length > 0 ? (
               filteredProducts.map((product, index) => (
@@ -251,7 +215,7 @@ const filteredProducts = products
                   <td className="px-4 py-2">{product.category_name}</td>
                   <td className="px-4 py-2">{product.subcategory_name}</td>
                   <td className="px-4 py-2">₹{product.price}</td>
-                  <td className="px-4 py-2">{product.stock}</td>
+                  <td className="px-4 py-2">{product.gender}</td>
                   <td className="px-4 py-2 text-center">
                     {product.image1 ? (
                       <img
@@ -263,15 +227,19 @@ const filteredProducts = products
                       <span className="text-gray-400 text-sm italic">No image</span>
                     )}
                   </td>
-
                   <td className="px-4 py-2 text-center flex justify-center gap-2">
                     <button
-                      onClick={() =>
-                        navigate(`/dashboard/add-product/${product.id}`)
-                      }
+                      onClick={() => navigate(`/dashboard/add-product/${product.id}`)}
                       className="text-[#03619E] hover:text-yellow-600 px-3 py-1"
                     >
                       Edit
+                    </button>
+
+                    <button
+                      onClick={() => navigate(`/dashboard/product-details/${product.id}`)}
+                      className="text-[#03619E] hover:text-green-600 px-3 py-1"
+                    >
+                      Details
                     </button>
 
                     <button
@@ -281,6 +249,7 @@ const filteredProducts = products
                       Delete
                     </button>
                   </td>
+
                 </tr>
               ))
             ) : (
@@ -314,39 +283,28 @@ const filteredProducts = products
                     No Img
                   </div>
                 )}
-
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    {product.name}
-                  </h3>
+                  <h3 className="text-lg font-semibold text-gray-800">{product.name}</h3>
                   <p className="text-sm text-gray-500">
-                    {product.category_name} • {product.subcategory_name}
+                    {product.category_name} • {product.subcategory_name} • {product.gender}
                   </p>
-                  <p className="text-sm font-medium text-[#03619E]">
-                    ₹{product.price}
-                  </p>
+                  <p className="text-sm font-medium text-[#03619E]">₹{product.price}</p>
                 </div>
               </div>
 
-              <div className="mt-3 flex justify-between items-center">
-                <p className="text-sm text-gray-500">Stock: {product.stock}</p>
-
-                <div className="flex gap-3 text-sm font-medium">
-                  <button
-                    onClick={() =>
-                      navigate(`/dashboard/add-product/${product.id}`)
-                    }
-                    className="text-[#03619E] hover:text-yellow-600"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(product.id)}
-                    className="text-[#03619E] hover:text-red-600"
-                  >
-                    Delete
-                  </button>
-                </div>
+              <div className="mt-3 flex justify-end items-center gap-3 text-sm font-medium">
+                <button
+                  onClick={() => navigate(`/dashboard/add-product/${product.id}`)}
+                  className="text-[#03619E] hover:text-yellow-600"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(product.id)}
+                  className="text-[#03619E] hover:text-red-600"
+                >
+                  Delete
+                </button>
               </div>
             </div>
           ))
