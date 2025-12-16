@@ -3,6 +3,7 @@ import axios from "axios";
 import AddVariant from "../components/AddVariant";
 
 export default function Variants() {
+    const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
   const [variants, setVariants] = useState([]);
   const [refresh, setRefresh] = useState(false); // trigger refresh after add/delete
 

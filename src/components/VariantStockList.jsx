@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 
 export default function VariantStockList() {
+    const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
   const [variants, setVariants] = useState([]);
 
   const fetchVariants = async () => {

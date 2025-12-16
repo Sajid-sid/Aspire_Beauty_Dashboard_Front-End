@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 
 export default function ProductDetailsForm() {
+
+    const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+
   const [products, setProducts] = useState([]);
   const [formData, setFormData] = useState({
     productid: "",

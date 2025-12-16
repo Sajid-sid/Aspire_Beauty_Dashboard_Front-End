@@ -7,6 +7,7 @@ export default function StockPage() {
 
   // Fetch all variants
   const fetchVariants = async () => {
+      const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
     try {
       const res = await axios.get(`${BASE_URL}/api/variants`);
       setVariants(res.data);
