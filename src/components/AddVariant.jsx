@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 
 export default function AddVariant({ onSuccess }) {
-    const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+  const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+
   const [products, setProducts] = useState([]);
   const [formData, setFormData] = useState({
     productid: "",
@@ -12,25 +13,28 @@ export default function AddVariant({ onSuccess }) {
     product_image: null,
   });
 
-  // Fetch products on mount
+  // Fetch products
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const res = await axios.get(`${BASE_URL}/api/products`);
-        const data = Array.isArray(res.data) ? res.data : res.data.products || [];
-        console.log(data);
+        const data = Array.isArray(res.data)
+          ? res.data
+          : res.data.products || [];
         setProducts(data);
       } catch (error) {
         console.error("Failed to fetch products", error);
       }
     };
-
     fetchProducts();
   }, []);
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-    setFormData({ ...formData, [name]: files ? files[0] : value });
+    setFormData((prev) => ({
+      ...prev,
+      [name]: files ? files[0] : value,
+    }));
   };
 
   const handleSubmit = async () => {
@@ -40,15 +44,29 @@ export default function AddVariant({ onSuccess }) {
     }
 
     const payload = new FormData();
-    Object.keys(formData).forEach((key) => payload.append(key, formData[key]));
-    console.log(formData);
+
+    // ✅ append text fields
+    payload.append("productid", formData.productid);
+    payload.append("varient", formData.varient);
+    payload.append("stock", formData.stock);
+
+    // ✅ append files ONLY if selected
+    if (formData.varient_image) {
+      payload.append("varient_image", formData.varient_image);
+    }
+
+    if (formData.product_image) {
+      payload.append("product_image", formData.product_image);
+    }
 
     try {
       await axios.post(`${BASE_URL}/api/variants`, payload, {
         headers: { "Content-Type": "multipart/form-data" },
       });
+
       alert("Variant added successfully!");
       onSuccess && onSuccess();
+
       setFormData({
         productid: "",
         varient: "",
@@ -64,7 +82,9 @@ export default function AddVariant({ onSuccess }) {
 
   return (
     <div className="p-6 border rounded-lg bg-white shadow-md max-w-md mx-auto">
-      <h2 className="text-xl font-semibold mb-4 text-gray-700">Add Variant</h2>
+      <h2 className="text-xl font-semibold mb-4 text-gray-700">
+        Add Variant
+      </h2>
 
       {/* Product */}
       <label className="block mb-2 font-medium text-gray-600">Product</label>
@@ -72,60 +92,67 @@ export default function AddVariant({ onSuccess }) {
         name="productid"
         value={formData.productid}
         onChange={handleChange}
-        className="w-full border rounded p-2 mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+        className="w-full border rounded p-2 mb-4"
       >
         <option value="">Select Product</option>
-        {Array.isArray(products) &&
-          products.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
+        {products.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.name}
+          </option>
+        ))}
       </select>
 
-      {/* Variant Name */}
-      <label className="block mb-2 font-medium text-gray-600">Variant Name</label>
+      {/* Variant */}
+      <label className="block mb-2 font-medium text-gray-600">
+        Variant Name
+      </label>
       <input
         type="text"
         name="varient"
         value={formData.varient}
         onChange={handleChange}
-        placeholder="Variant name (e.g., Red 50ml)"
-        className="w-full border rounded p-2 mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+        className="w-full border rounded p-2 mb-4"
       />
 
       {/* Variant Image */}
-      <label className="block mb-2 font-medium text-gray-600">Variant Image</label>
+      <label className="block mb-2 font-medium text-gray-600">
+        Variant Image
+      </label>
       <input
         type="file"
         name="varient_image"
+        accept="image/*"
         onChange={handleChange}
         className="w-full mb-4"
       />
 
       {/* Product Image */}
-      <label className="block mb-2 font-medium text-gray-600">Product Image</label>
+      <label className="block mb-2 font-medium text-gray-600">
+        Product Image
+      </label>
       <input
         type="file"
         name="product_image"
+        accept="image/*"
         onChange={handleChange}
         className="w-full mb-4"
       />
 
       {/* Stock */}
-      <label className="block mb-2 font-medium text-gray-600">Initial Stock</label>
+      <label className="block mb-2 font-medium text-gray-600">
+        Initial Stock
+      </label>
       <input
         type="number"
         name="stock"
         value={formData.stock}
         onChange={handleChange}
-        className="w-full border rounded p-2 mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+        className="w-full border rounded p-2 mb-4"
       />
 
-      {/* Submit Button */}
       <button
         onClick={handleSubmit}
-        className="w-full bg-indigo-600 text-white p-2 rounded hover:bg-indigo-700 transition"
+        className="w-full bg-indigo-600 text-white p-2 rounded hover:bg-indigo-700"
       >
         Save Variant
       </button>
