@@ -16,7 +16,7 @@ export default function AddVariant({ onSuccess }) {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await axios.get(`${BASE_URL}/api/categories/products`);
+        const res = await axios.get(`${BASE_URL}/api/products`);
         const data = Array.isArray(res.data) ? res.data : res.data.products || [];
         console.log(data);
         setProducts(data);
