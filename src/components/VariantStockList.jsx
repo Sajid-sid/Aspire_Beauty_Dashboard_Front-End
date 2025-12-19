@@ -2,21 +2,22 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 
 export default function VariantStockList() {
-    const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+  const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+
   const [variants, setVariants] = useState([]);
+  const [editing, setEditing] = useState(null);
+  const [editData, setEditData] = useState({
+    varient: "",
+    price: "",
+    stock: "",
+  });
 
   const fetchVariants = async () => {
     try {
-      const res = await axios.get(`${BASE_URL}/api/stock`);
-
-      const data = Array.isArray(res.data)
-        ? res.data
-        : res.data.variants || res.data.data || [];
-
-      setVariants(data);
+      const res = await axios.get(`${BASE_URL}/api/variants`);
+      setVariants(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
       console.error("Failed to fetch variants", error);
-      setVariants([]);
     }
   };
 
@@ -29,7 +30,7 @@ export default function VariantStockList() {
     if (!qty || isNaN(qty)) return;
 
     try {
-      await axios.put(`/api/stock/add-stock/${id}`, {
+      await axios.put(`${BASE_URL}/api/stock/add-stock/${id}`, {
         quantity: Number(qty),
       });
       fetchVariants();
@@ -38,91 +39,130 @@ export default function VariantStockList() {
     }
   };
 
+  const startEdit = (v) => {
+    setEditing(v.stockId);
+    setEditData({
+      varient: v.varient,
+      price: v.price,
+      stock: v.stock,
+    });
+  };
+
+  const updateVariant = async (id) => {
+    try {
+      await axios.put(`${BASE_URL}/api/variants/${id}`, editData);
+      setEditing(null);
+      fetchVariants();
+    } catch (err) {
+      console.error("Update failed", err);
+    }
+  };
+
   return (
     <div className="mt-6 bg-white shadow-lg rounded-xl p-6">
-      <h2 className="text-lg font-semibold text-gray-800 mb-4">
-        Variant Stock Management
-      </h2>
+      <h2 className="text-lg font-semibold mb-4">Variant Stock Management</h2>
 
       <div className="overflow-x-auto">
-        <table className="w-full border border-gray-200 rounded-lg">
-          <thead className="bg-gray-100 text-gray-700 text-sm">
+        <table className="w-full border rounded-lg">
+          <thead className="bg-gray-100 text-sm">
             <tr>
               <th className="p-3 text-left">Product</th>
               <th className="p-3 text-left">Variant</th>
+              <th className="p-3 text-center">Price</th>
               <th className="p-3 text-center">Stock</th>
-              <th className="p-3 text-center">Pending</th>
-              <th className="p-3 text-center">Confirmed</th>
               <th className="p-3 text-center">Action</th>
             </tr>
           </thead>
 
           <tbody>
-            {variants.length === 0 ? (
-              <tr>
-                <td colSpan="6" className="p-6 text-center text-gray-500">
-                  No variants found
+            {variants.map((v) => (
+              <tr key={v.stockId} className="border-t">
+                {/* Product */}
+                <td className="p-3 font-medium">{v.productname}</td>
+
+                {/* Variant */}
+                <td className="p-3">
+                  {editing === v.stockId ? (
+                    <input
+                      value={editData.varient}
+                      onChange={(e) =>
+                        setEditData({ ...editData, varient: e.target.value })
+                      }
+                      className="border p-1 rounded w-full"
+                    />
+                  ) : (
+                    v.varient
+                  )}
+                </td>
+
+                {/* Price */}
+                <td className="p-3 text-center">
+                  {editing === v.stockId ? (
+                    <input
+                      type="number"
+                      value={editData.price}
+                      onChange={(e) =>
+                        setEditData({ ...editData, price: e.target.value })
+                      }
+                      className="border p-1 rounded w-24 text-center"
+                    />
+                  ) : (
+                    `₹${v.price}`
+                  )}
+                </td>
+
+                {/* Stock */}
+                <td className="p-3 text-center">
+                  {editing === v.stockId ? (
+                    <input
+                      type="number"
+                      value={editData.stock}
+                      onChange={(e) =>
+                        setEditData({ ...editData, stock: e.target.value })
+                      }
+                      className="border p-1 rounded w-20 text-center"
+                    />
+                  ) : (
+                    v.stock
+                  )}
+                </td>
+
+                {/* Actions */}
+                <td className="p-3 text-center space-x-2">
+                  {editing === v.stockId ? (
+                    <>
+                      <button
+                        onClick={() => updateVariant(v.stockId)}
+                        className="px-3 py-1 bg-green-600 text-white rounded"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => setEditing(null)}
+                        className="px-3 py-1 bg-gray-400 text-white rounded"
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => startEdit(v)}
+                        className="px-3 py-1 bg-indigo-600 text-white rounded"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => addStock(v.stockId)}
+                        className="px-3 py-1 bg-blue-600 text-white rounded"
+                      >
+                        + Stock
+                      </button>
+                    </>
+                  )}
                 </td>
               </tr>
-            ) : (
-              variants.map((v) => (
-                <tr
-                  key={v.stockId}
-                  className="border-t hover:bg-gray-50 transition"
-                >
-                  {/* Product */}
-                  <td className="p-3">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={v.product_image}
-                        alt={v.productname}
-                        className="w-12 h-12 rounded-md object-cover border"
-                      />
-                      <span className="font-medium text-gray-800">
-                        {v.productname}
-                      </span>
-                    </div>
-                  </td>
-
-                  {/* Variant */}
-                  <td className="p-3">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={v.varient_image}
-                        alt={v.varient}
-                        className="w-10 h-10 rounded-md object-cover border"
-                      />
-                      <span className="capitalize">{v.varient}</span>
-                    </div>
-                  </td>
-
-                  {/* Stock */}
-                  <td className="p-3 text-center font-semibold text-blue-600">
-                    {v.stock}
-                  </td>
-
-                  {/* Pending */}
-                  <td className="p-3 text-center text-orange-500">
-                    {v.pending}
-                  </td>
-
-                  {/* Confirmed */}
-                  <td className="p-3 text-center text-green-600">
-                    {v.confirmed}
-                  </td>
-
-                  {/* Action */}
-                  <td className="p-3 text-center">
-                    <button
-                      onClick={() => addStock(v.stockId)}
-                      className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
-                    >
-                      + Add Stock
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
+            ))}
           </tbody>
         </table>
       </div>

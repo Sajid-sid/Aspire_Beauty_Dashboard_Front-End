@@ -107,12 +107,6 @@ const Products = () => {
       const matchGender = selectedGender ? p.gender === selectedGender : true;
 
       return matchSearch && matchCategory && matchSub && matchGender;
-    })
-    .sort((a, b) => {
-      if (sortBy === "newest") return new Date(b.created_at) - new Date(a.created_at);
-      if (sortBy === "low-high") return a.price - b.price;
-      if (sortBy === "high-low") return b.price - a.price;
-      return 0;
     });
 
   return (
@@ -186,8 +180,6 @@ const Products = () => {
         >
           <option value="">Sort By</option>
           <option value="newest">Newest</option>
-          <option value="low-high">Price: Low → High</option>
-          <option value="high-low">Price: High → Low</option>
         </select>
       </div>
 
@@ -200,7 +192,6 @@ const Products = () => {
               <th className="px-4 py-2 text-left">Name</th>
               <th className="px-4 py-2 text-left">Category</th>
               <th className="px-4 py-2 text-left">Subcategory</th>
-              <th className="px-4 py-2 text-left">Price</th>
               <th className="px-4 py-2 text-left">Gender</th>
               <th className="px-4 py-2 text-center">Image</th>
               <th className="px-4 py-2 text-center">Actions</th>
@@ -214,7 +205,6 @@ const Products = () => {
                   <td className="px-4 py-2 font-medium text-gray-700">{product.name}</td>
                   <td className="px-4 py-2">{product.category_name}</td>
                   <td className="px-4 py-2">{product.subcategory_name}</td>
-                  <td className="px-4 py-2">₹{product.price}</td>
                   <td className="px-4 py-2">{product.gender}</td>
                   <td className="px-4 py-2 text-center">
                     {product.image1 ? (
@@ -288,7 +278,6 @@ const Products = () => {
                   <p className="text-sm text-gray-500">
                     {product.category_name} • {product.subcategory_name} • {product.gender}
                   </p>
-                  <p className="text-sm font-medium text-[#03619E]">₹{product.price}</p>
                 </div>
               </div>
 

@@ -97,16 +97,7 @@ const Sidebar = ({ isOpen, toggle }) => {
                 className={`ml-10 mt-1 flex flex-col gap-1 transition-all duration-300 
                 ${!isOpen ? "hidden" : ""}`}
               >
-                <NavLink
-                  to="/dashboard/products"
-                  onClick={() => window.innerWidth < 768 && toggle()}
-                  className={({ isActive }) =>
-                    `py-2 px-3 rounded-md text-sm 
-                    ${isActive ? "bg-blue-600" : "hover:bg-blue-700"}`
-                  }
-                >
-                  Products
-                </NavLink>
+               
 
                 <NavLink
                   to="/dashboard/categories"
@@ -128,6 +119,16 @@ const Sidebar = ({ isOpen, toggle }) => {
                   }
                 >
                   Subcategories
+                </NavLink>
+                <NavLink
+                  to="/dashboard/products"
+                  onClick={() => window.innerWidth < 768 && toggle()}
+                  className={({ isActive }) =>
+                    `py-2 px-3 rounded-md text-sm 
+                    ${isActive ? "bg-blue-600" : "hover:bg-blue-700"}`
+                  }
+                >
+                  Products
                 </NavLink>
               </div>
             )}

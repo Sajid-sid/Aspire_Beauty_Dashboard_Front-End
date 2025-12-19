@@ -1,16 +1,23 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
-export default function AddVariant({ onSuccess }) {
+export default function AddVariant({ editVariant, onSuccess, onCancelEdit }) {
   const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
 
   const [products, setProducts] = useState([]);
+
   const [formData, setFormData] = useState({
     productid: "",
     varient: "",
-    stock: 0,
+    price: "",
+    stock: "",
     varient_image: null,
     product_image: null,
+  });
+
+  const [preview, setPreview] = useState({
+    varient_image: "",
+    product_image: "",
   });
 
   // Fetch products
@@ -18,144 +25,193 @@ export default function AddVariant({ onSuccess }) {
     const fetchProducts = async () => {
       try {
         const res = await axios.get(`${BASE_URL}/api/products`);
-        const data = Array.isArray(res.data)
-          ? res.data
-          : res.data.products || [];
-        setProducts(data);
-      } catch (error) {
-        console.error("Failed to fetch products", error);
+        setProducts(res.data?.products || res.data || []);
+      } catch (err) {
+        console.error("Failed to fetch products", err);
       }
     };
     fetchProducts();
   }, []);
 
+  // Populate form for editing after products are loaded
+  useEffect(() => {
+    if (editVariant && products.length) {
+      setFormData({
+        productid: String(editVariant.productid), // ensure string
+        varient: editVariant.varient || "",
+        price: editVariant.price || "",
+        stock: editVariant.stock || "",
+        varient_image: null,
+        product_image: null,
+      });
+
+      setPreview({
+        varient_image: editVariant.varient_image || "",
+        product_image: editVariant.product_image || "",
+      });
+    }
+  }, [editVariant, products]); // runs when editVariant or products change
+
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: files ? files[0] : value,
-    }));
+
+    if (files) {
+      setFormData((prev) => ({ ...prev, [name]: files[0] }));
+      setPreview((prev) => ({
+        ...prev,
+        [name]: URL.createObjectURL(files[0]),
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = async () => {
-    if (!formData.productid || !formData.varient) {
-      alert("Please select a product and enter variant name.");
+    if (!formData.productid || !formData.varient || !formData.price) {
+      alert("Product, variant & price are required");
       return;
     }
 
     const payload = new FormData();
-
-    // ✅ append text fields
-    payload.append("productid", formData.productid);
-    payload.append("varient", formData.varient);
-    payload.append("stock", formData.stock);
-
-    // ✅ append files ONLY if selected
-    if (formData.varient_image) {
-      payload.append("varient_image", formData.varient_image);
-    }
-
-    if (formData.product_image) {
-      payload.append("product_image", formData.product_image);
-    }
+    Object.entries(formData).forEach(([k, v]) => {
+      if (v !== null && v !== "") payload.append(k, v);
+    });
 
     try {
-      await axios.post(`${BASE_URL}/api/variants`, payload, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      if (editVariant) {
+        await axios.put(`${BASE_URL}/api/variants/${editVariant.stockId}`, payload, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        alert("Variant updated");
+      } else {
+        await axios.post(`${BASE_URL}/api/variants`, payload, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        alert("Variant added");
+      }
 
-      alert("Variant added successfully!");
-      onSuccess && onSuccess();
+      onSuccess?.();
 
+      // Reset form
       setFormData({
         productid: "",
         varient: "",
-        stock: 0,
+        price: "",
+        stock: "",
         varient_image: null,
         product_image: null,
       });
-    } catch (error) {
-      console.error(error);
-      alert("Failed to add variant.");
+      setPreview({ varient_image: "", product_image: "" });
+    } catch (err) {
+      console.error(err);
+      alert("Operation failed");
     }
   };
 
   return (
-    <div className="p-6 border rounded-lg bg-white shadow-md max-w-md mx-auto">
-      <h2 className="text-xl font-semibold mb-4 text-gray-700">
-        Add Variant
+    <div className="p-6 bg-white shadow rounded max-w-md">
+      <h2 className="text-xl font-semibold mb-4">
+        {editVariant ? "Edit Variant" : "Add Variant"}
       </h2>
 
-      {/* Product */}
-      <label className="block mb-2 font-medium text-gray-600">Product</label>
+      {/* Product Dropdown */}
       <select
         name="productid"
         value={formData.productid}
         onChange={handleChange}
-        className="w-full border rounded p-2 mb-4"
+        className="w-full border p-2 mb-3 rounded"
       >
         <option value="">Select Product</option>
         {products.map((p) => (
-          <option key={p.id} value={p.id}>
+          <option key={p.id} value={String(p.id)}>
             {p.name}
           </option>
         ))}
       </select>
 
-      {/* Variant */}
-      <label className="block mb-2 font-medium text-gray-600">
-        Variant Name
-      </label>
+      {/* Variant Name */}
       <input
-        type="text"
         name="varient"
         value={formData.varient}
         onChange={handleChange}
-        className="w-full border rounded p-2 mb-4"
+        placeholder="Variant Name"
+        className="w-full border p-2 mb-3 rounded"
       />
 
-      {/* Variant Image */}
-      <label className="block mb-2 font-medium text-gray-600">
-        Variant Image
-      </label>
+      {/* Price */}
       <input
-        type="file"
-        name="varient_image"
-        accept="image/*"
+        type="number"
+        name="price"
+        value={formData.price}
         onChange={handleChange}
-        className="w-full mb-4"
-      />
-
-      {/* Product Image */}
-      <label className="block mb-2 font-medium text-gray-600">
-        Product Image
-      </label>
-      <input
-        type="file"
-        name="product_image"
-        accept="image/*"
-        onChange={handleChange}
-        className="w-full mb-4"
+        placeholder="Price"
+        className="w-full border p-2 mb-3 rounded"
       />
 
       {/* Stock */}
-      <label className="block mb-2 font-medium text-gray-600">
-        Initial Stock
-      </label>
       <input
         type="number"
         name="stock"
         value={formData.stock}
         onChange={handleChange}
-        className="w-full border rounded p-2 mb-4"
+        placeholder="Stock"
+        className="w-full border p-2 mb-3 rounded"
       />
 
-      <button
-        onClick={handleSubmit}
-        className="w-full bg-indigo-600 text-white p-2 rounded hover:bg-indigo-700"
-      >
-        Save Variant
-      </button>
+      {/* Variant Image */}
+      <div className="mb-3">
+        <label className="text-sm font-medium">Variant Image</label>
+        {preview.varient_image && (
+          <img
+            src={preview.varient_image}
+            alt="Variant Preview"
+            className="h-20 w-20 object-cover rounded mb-2"
+          />
+        )}
+        <input
+          type="file"
+          name="varient_image"
+          accept="image/*"
+          onChange={handleChange}
+        />
+      </div>
+
+      {/* Product Image */}
+      <div className="mb-3">
+        <label className="text-sm font-medium">Product Image</label>
+        {preview.product_image && (
+          <img
+            src={preview.product_image}
+            alt="Product Preview"
+            className="h-20 w-20 object-cover rounded mb-2"
+          />
+        )}
+        <input
+          type="file"
+          name="product_image"
+          accept="image/*"
+          onChange={handleChange}
+        />
+      </div>
+
+      {/* Buttons */}
+      <div className="flex gap-2 mt-4">
+        <button
+          onClick={handleSubmit}
+          className="flex-1 bg-indigo-600 text-white p-2 rounded"
+        >
+          {editVariant ? "Update Variant" : "Save Variant"}
+        </button>
+
+        {editVariant && (
+          <button
+            onClick={onCancelEdit}
+            className="flex-1 bg-gray-400 text-white p-2 rounded"
+          >
+            Cancel
+          </button>
+        )}
+      </div>
     </div>
   );
 }
