@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { io } from "socket.io-client";
 
 export default function AddVariant({ editVariant, onSuccess, onCancelEdit }) {
   const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
-
   const [products, setProducts] = useState([]);
-
   const [formData, setFormData] = useState({
     productid: "",
     varient: "",
@@ -20,6 +19,21 @@ export default function AddVariant({ editVariant, onSuccess, onCancelEdit }) {
     product_image: "",
   });
 
+  // Socket
+  useEffect(() => {
+    const socket = io(BASE_URL);
+
+    socket.on("variant:created", (newVariant) => {
+      onSuccess?.(newVariant); // call parent callback
+    });
+
+    socket.on("variant:updated", (updatedVariant) => {
+      onSuccess?.(updatedVariant);
+    });
+
+    return () => socket.disconnect();
+  }, []);
+
   // Fetch products
   useEffect(() => {
     const fetchProducts = async () => {
@@ -33,11 +47,11 @@ export default function AddVariant({ editVariant, onSuccess, onCancelEdit }) {
     fetchProducts();
   }, []);
 
-  // Populate form for editing after products are loaded
+  // Populate form for editing
   useEffect(() => {
     if (editVariant && products.length) {
       setFormData({
-        productid: String(editVariant.productid), // ensure string
+        productid: String(editVariant.productid),
         varient: editVariant.varient || "",
         price: editVariant.price || "",
         stock: editVariant.stock || "",
@@ -50,7 +64,7 @@ export default function AddVariant({ editVariant, onSuccess, onCancelEdit }) {
         product_image: editVariant.product_image || "",
       });
     }
-  }, [editVariant, products]); // runs when editVariant or products change
+  }, [editVariant, products]);
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
@@ -82,6 +96,7 @@ export default function AddVariant({ editVariant, onSuccess, onCancelEdit }) {
         await axios.put(`${BASE_URL}/api/variants/${editVariant.stockId}`, payload, {
           headers: { "Content-Type": "multipart/form-data" },
         });
+        // No need to manually call onSuccess here; socket will handle it
         alert("Variant updated");
       } else {
         await axios.post(`${BASE_URL}/api/variants`, payload, {
@@ -90,9 +105,7 @@ export default function AddVariant({ editVariant, onSuccess, onCancelEdit }) {
         alert("Variant added");
       }
 
-      onSuccess?.();
-
-      // Reset form
+      // Reset form after submission
       setFormData({
         productid: "",
         varient: "",
@@ -114,7 +127,6 @@ export default function AddVariant({ editVariant, onSuccess, onCancelEdit }) {
         {editVariant ? "Edit Variant" : "Add Variant"}
       </h2>
 
-      {/* Product Dropdown */}
       <select
         name="productid"
         value={formData.productid}
@@ -129,7 +141,6 @@ export default function AddVariant({ editVariant, onSuccess, onCancelEdit }) {
         ))}
       </select>
 
-      {/* Variant Name */}
       <input
         name="varient"
         value={formData.varient}
@@ -137,8 +148,6 @@ export default function AddVariant({ editVariant, onSuccess, onCancelEdit }) {
         placeholder="Variant Name"
         className="w-full border p-2 mb-3 rounded"
       />
-
-      {/* Price */}
       <input
         type="number"
         name="price"
@@ -147,8 +156,6 @@ export default function AddVariant({ editVariant, onSuccess, onCancelEdit }) {
         placeholder="Price"
         className="w-full border p-2 mb-3 rounded"
       />
-
-      {/* Stock */}
       <input
         type="number"
         name="stock"
@@ -168,12 +175,7 @@ export default function AddVariant({ editVariant, onSuccess, onCancelEdit }) {
             className="h-20 w-20 object-cover rounded mb-2"
           />
         )}
-        <input
-          type="file"
-          name="varient_image"
-          accept="image/*"
-          onChange={handleChange}
-        />
+        <input type="file" name="varient_image" accept="image/*" onChange={handleChange} />
       </div>
 
       {/* Product Image */}
@@ -186,15 +188,9 @@ export default function AddVariant({ editVariant, onSuccess, onCancelEdit }) {
             className="h-20 w-20 object-cover rounded mb-2"
           />
         )}
-        <input
-          type="file"
-          name="product_image"
-          accept="image/*"
-          onChange={handleChange}
-        />
+        <input type="file" name="product_image" accept="image/*" onChange={handleChange} />
       </div>
 
-      {/* Buttons */}
       <div className="flex gap-2 mt-4">
         <button
           onClick={handleSubmit}
@@ -202,7 +198,6 @@ export default function AddVariant({ editVariant, onSuccess, onCancelEdit }) {
         >
           {editVariant ? "Update Variant" : "Save Variant"}
         </button>
-
         {editVariant && (
           <button
             onClick={onCancelEdit}

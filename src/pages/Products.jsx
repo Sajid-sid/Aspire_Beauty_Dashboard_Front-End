@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import socket from "../socket";
 
 const Products = () => {
   const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
@@ -80,19 +81,37 @@ const Products = () => {
   }, [selectedCategory, categories, subcategories]);
 
   // Delete product
+  // const handleDelete = async (id) => {
+  //   if (!window.confirm("Are you sure you want to delete this product?")) return;
+  //   try {
+  //     await axios.delete(`${BASE_URL}/api/products/delete/${id}`, {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     });
+  //     setProducts(products.filter((p) => p.id !== id));
+  //     setMessage("✅ Product Deleted");
+  //   } catch (err) {
+  //     console.error("Error deleting product:", err);
+  //     setMessage("❌ Failed to delete product");
+  //   }
+  // };
+
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this product?")) return;
+
     try {
       await axios.delete(`${BASE_URL}/api/products/delete/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setProducts(products.filter((p) => p.id !== id));
+
       setMessage("✅ Product Deleted");
     } catch (err) {
       console.error("Error deleting product:", err);
       setMessage("❌ Failed to delete product");
     }
   };
+
+
+
 
   const filteredProducts = products
     .filter((p) => {
@@ -108,6 +127,36 @@ const Products = () => {
 
       return matchSearch && matchCategory && matchSub && matchGender;
     });
+
+
+  useEffect(() => {
+    // ✅ product created
+    socket.on("product:created", (newProduct) => {
+      setProducts((prev) => [newProduct, ...prev]);
+    });
+
+    // ✅ product updated
+    socket.on("product:updated", (updatedProduct) => {
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === updatedProduct.id ? { ...p, ...updatedProduct } : p
+        )
+      );
+    });
+
+    // ✅ product deleted
+    socket.on("product:deleted", (deletedId) => {
+      setProducts((prev) => prev.filter((p) => p.id !== deletedId));
+    });
+
+    return () => {
+      socket.off("product:created");
+      socket.off("product:updated");
+      socket.off("product:deleted");
+    };
+  }, []);
+
+
 
   return (
     <div className="p-4 sm:p-6 bg-white shadow-md rounded-2xl max-w-6xl mx-auto mt-8">

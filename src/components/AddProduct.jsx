@@ -35,7 +35,7 @@ const AddProduct = () => {
     image4: null,
   });
 
-  // Load categories
+  /* ================= LOAD CATEGORIES ================= */
   useEffect(() => {
     axios
       .get(`${BASE_URL}/api/categories`)
@@ -43,15 +43,16 @@ const AddProduct = () => {
       .catch(console.error);
   }, []);
 
-  // Load product if edit mode
+  /* ================= LOAD PRODUCT (EDIT MODE) ================= */
   useEffect(() => {
     if (!isEdit) return;
-    setLoading(true);
 
+    setLoading(true);
     axios
       .get(`${BASE_URL}/api/products/${id}`)
       .then((res) => {
         const p = res.data;
+
         setProduct({
           name: p.name || "",
           sku: p.sku || "",
@@ -77,7 +78,7 @@ const AddProduct = () => {
       .finally(() => setLoading(false));
   }, [id, isEdit]);
 
-  // Load subcategories on category change (Add mode)
+  /* ================= LOAD SUBCATEGORIES (ADD MODE) ================= */
   useEffect(() => {
     if (isEdit) return;
     if (!product.category_id) {
@@ -93,6 +94,7 @@ const AddProduct = () => {
       .catch(console.error);
   }, [product.category_id, isEdit]);
 
+  /* ================= HANDLERS ================= */
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setProduct((prev) => ({ ...prev, [name]: value }));
@@ -112,8 +114,10 @@ const AddProduct = () => {
     }
   };
 
+  /* ================= SUBMIT ================= */
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     const fd = new FormData();
     Object.keys(product).forEach((key) => fd.append(key, product[key]));
     Object.keys(images).forEach((key) => {
@@ -139,6 +143,7 @@ const AddProduct = () => {
         });
       }
 
+      // ✅ backend will emit socket event
       navigate("/dashboard/products");
     } catch (err) {
       console.error("Submit error:", err);
@@ -147,6 +152,7 @@ const AddProduct = () => {
 
   if (loading) return <div className="p-6">Loading...</div>;
 
+  /* ================= UI ================= */
   return (
     <div className="p-6">
       <h2 className="text-2xl font-semibold mb-4">
@@ -175,15 +181,9 @@ const AddProduct = () => {
             value={product.sku}
             onChange={handleInputChange}
             className="border p-2 w-full"
-            placeholder="e.g. AB-PRD-0001"
             required
             disabled={isEdit}
           />
-          {isEdit && (
-            <p className="text-xs text-gray-500 mt-1">
-              SKU cannot be changed once created
-            </p>
-          )}
         </div>
 
         <div>
@@ -205,7 +205,6 @@ const AddProduct = () => {
             value={product.gender}
             onChange={handleInputChange}
             className="border p-2 w-full"
-            required
           >
             <option value="male">Male</option>
             <option value="female">Female</option>
